@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142d27">
+  <title>Fütterungssteuerung</title>
+  <style>
+    :root { color-scheme: light; --ink:#18352c; --muted:#66776f; --green:#245b43; --pale:#e3eee7; --line:#dce5df; --bg:#f4f7f4; --white:#fff; --warn:#8b5a10; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:#1e2e27; font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .shell { max-width:680px; margin:0 auto; padding:16px 14px 40px; }
+    header { background:var(--ink); color:white; padding:22px 20px; border-radius:22px; box-shadow:0 8px 24px #18352c18; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo { width:46px;height:46px;border-radius:14px;background:#315a4b;display:grid;place-items:center;font-size:25px; }
+    h1 { font-size:21px; line-height:1.2; margin:0; }
+    .sub { color:#c8d9d0; font-size:13px; margin-top:4px; }
+    .statusline { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #49665b; margin-top:18px; padding-top:14px; gap:12px; }
+    .pill { border-radius:999px; padding:5px 10px; font-size:12px; font-weight:750; background:#fff2d6;color:#81550e; white-space:nowrap; }
+    nav { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0; }
+    nav button { border:0; border-radius:13px; padding:11px 5px; background:#e8eeea; color:#42564c; font-weight:700; cursor:pointer; }
+    nav button.active { background:#d8e9dd;color:#245b43; }
+    .card { background:var(--white); border:1px solid var(--line); border-radius:18px; padding:17px; margin:12px 0; }
+    h2 { font-size:18px; margin:0 0 5px; }
+    h3 { font-size:15px; margin:0; }
+    .muted { color:var(--muted); font-size:13px; }
+    .durationrow { display:flex; align-items:center; gap:10px; margin-top:15px; }
+    .durationrow input { min-width:0; flex:1; }
+    input[type=number] { width:100%; border:1px solid #ccd8d0; border-radius:11px; padding:12px; font:inherit; background:white; }
+    .stepper { border:1px solid var(--line); background:#fff; border-radius:11px; width:44px;height:44px;font-size:22px; cursor:pointer; }
+    .presets { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .preset { border:0; background:#edf2ee; color:#33483c; border-radius:999px; padding:8px 13px; font-weight:700; cursor:pointer; }
+    .preset.selected { background:#d8e9dd;color:#245b43; }
+    .primary { width:100%; border:0; background:var(--green); color:white; padding:14px 16px; border-radius:13px; font:700 16px inherit; font-weight:750; cursor:pointer; margin-top:12px; }
+    .secondary { width:100%; border:1px solid #cbd8cf; background:white; color:#274a38; padding:12px 14px; border-radius:12px; font:inherit; font-weight:700; cursor:pointer; margin-top:8px; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .safe { display:flex; align-items:flex-start; gap:11px; background:#f0f5f1; border-radius:13px; padding:13px; margin-top:13px; }
+    .safe .symbol { font-size:21px; }
+    .row { display:flex; align-items:center; gap:12px; }
+    .grow { flex:1; }
+    .toggle { border:0; border-radius:999px; padding:9px 14px; background:#d8e9dd; color:#245b43; font-weight:800; cursor:pointer; }
+    .toggle.off { background:#edf0ed;color:#5b675f; }
+    .divider { height:1px; background:var(--line); margin:15px 0; }
+    .hidden { display:none !important; }
+    .notice { border:1px solid #ead8b3; background:#fff8e9; color:#70521b; padding:12px 14px; border-radius:13px; font-size:13px; margin-top:14px; }
+    .event { padding:12px 0; border-bottom:1px solid var(--line); font-size:14px; }
+    .event:last-child { border-bottom:0; }
+    .event small { display:block;color:var(--muted);margin-top:3px; }
+    .tag { font-size:11px; color:#70521b; background:#fff2d6; padding:3px 7px; border-radius:999px; font-weight:800; }
+    footer { text-align:center; color:var(--muted); font-size:12px; padding:12px 8px; }
+    @media (min-width:520px) { .shell { padding-top:26px; } header { padding:26px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">🌱</div>
+        <div>
+          <h1>Fütterungssteuerung</h1>
+          <div class="sub">Automat 001 · Web-Prototyp</div>
+        </div>
+      </div>
+      <div class="statusline">
+        <div>
+          <strong>LTE-Verbindung</strong>
+          <div class="sub">Noch nicht mit einem Gerät verbunden</div>
+        </div>
+        <span class="pill">DEMO-MODUS</span>
+      </div>
+    </header>
+
+    <nav aria-label="Hauptmenü">
+      <button class="active" data-page="control">🎛 Steuerung</button>
+      <button data-page="history">◷ Protokoll</button>
+      <button data-page="settings">⚙ Einstellungen</button>
+    </nav>
+
+    <section id="controlPage">
+      <div class="card">
+        <h2>Manuelle Fütterung</h2>
+        <div class="muted">Start mit 10 Sekunden Vorlauf, danach läuft der Motor für die eingestellte Dauer. In dieser Version ist alles nur simuliert.</div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="grow">
+            <h3>Streudauer</h3>
+            <div class="muted">Erlaubter Bereich: 1–99 Sekunden</div>
+          </div>
+          <strong id="durationDisplay" style="font-size:24px;white-space:nowrap">8 s</strong>
+        </div>
+        <div class="durationrow">
+          <button class="stepper" id="minus" aria-label="Dauer verringern">−</button>
+          <input id="duration" type="number" min="1" max="99" step="1" value="8" inputmode="numeric" aria-label="Streudauer in Sekunden">
+          <button class="stepper" id="plus" aria-label="Dauer erhöhen">+</button>
+        </div>
+        <div class="presets" aria-label="Voreinstellungen">
+          <button class="preset" data-duration="5">5 s</button>
+          <button class="preset selected" data-duration="8">8 s</button>
+          <button class="preset" data-duration="10">10 s</button>
+          <button class="preset" data-duration="15">15 s</button>
+          <button class="preset" data-duration="30">30 s</button>
+        </div>
+        <div id="durationError" class="muted" style="color:#a12d25;margin-top:8px" role="alert"></div>
+        <button id="requestStart" class="primary">Manuellen Start anfordern</button>
+        <div id="confirmPanel" class="safe hidden">
+          <div class="symbol">🛡️</div>
+          <div class="grow">
+            <h3>Start wirklich vorbereiten?</h3>
+            <div id="confirmText" class="muted" style="margin-top:4px"></div>
+            <button id="confirmStart" class="primary">Startablauf bestätigen (Demo)</button>
+            <button id="cancelStart" class="secondary">Abbrechen</button>
+          </div>
+        </div>
+        <div id="countdownPanel" class="safe hidden" aria-live="polite">
+          <div class="symbol">⏱</div>
+          <div class="grow">
+            <h3 id="countdownTitle">10 Sekunden Vorlauf</h3>
+            <div id="countdownText" class="muted">Nur Simulation. Kein Motor wird angesteuert.</div>
+            <button id="stopDemo" class="secondary">Simulation abbrechen</button>
+          </div>
+        </div>
+        <div class="notice">Demo-Modus: Diese Webseite ist noch nicht mit deinem LILYGO verbunden. Es werden keine echten Gerätebefehle gesendet.</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div style="font-size:23px">📅</div>
+          <div class="grow">
+            <h3>Automatik</h3>
+            <div class="muted">Lokaler Zeitplan am Gerät (später)</div>
+          </div>
+          <button id="autoToggle" class="toggle">Ein</button>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div style="font-size:22px">🕒</div>
+          <div class="grow">
+            <h3>Nächste Fütterung</h3>
+            <div class="muted" id="nextFeed">Noch kein Zeitplan hinterlegt</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="historyPage" class="hidden">
+      <div class="card">
+        <h2>Ereignisprotokoll</h2>
+        <div class="muted">Nur Ereignisse aus dieser Browser-Demo.</div>
+        <div id="events" style="margin-top:12px"></div>
+        <button id="clearEvents" class="secondary">Demo-Protokoll zurücksetzen</button>
+      </div>
+    </section>
+
+    <section id="settingsPage" class="hidden">
+      <div class="card">
+        <h2>Sicherheit & Einstellungen</h2>
+        <div class="row" style="margin-top:17px">
+          <div class="grow"><h3>Startverzögerung</h3><div class="muted">Fest auf 10 Sekunden gesetzt</div></div>
+          <span class="tag">10 s</span>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="grow"><h3>Streudauer</h3><div class="muted">Nur ganze Sekunden von 1 bis 99</div></div>
+          <span class="tag">Begrenzt</span>
+        </div>
+        <div class="divider"></div>
+        <div class="row">
+          <div class="grow"><h3>Geräteschutz</h3><div class="muted">Später zusätzlich direkt auf dem ESP32 prüfen</div></div>
+          <span class="tag">Erforderlich</span>
+        </div>
+        <div class="notice">Vor echtem Betrieb müssen Anmeldung, HTTPS, Geräteauthentifizierung, Berechtigungsprüfung und Schutz vor doppelten Befehlen eingerichtet werden. Keine Zugangsschlüssel in diese HTML-Datei eintragen.</div>
+      </div>
+    </section>
+    <footer>Fütterungssteuerung · Prototyp · Keine Hardwareverbindung</footer>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let autoEnabled = true;
+    let timer = null;
+    let events = [{message:"Steuerung geöffnet · Demo-Modus", time:new Date()}];
+    let startDuration = 8;
+
+    function validDuration() {
+      const raw = $("duration").value.trim();
+      const n = Number(raw);
+      return raw !== "" && Number.isInteger(n) && n >= 1 && n <= 99;
+    }
+    function updateDuration() {
+      const ok = validDuration();
+      $("durationError").textContent = ok ? "" : "Bitte eine ganze Zahl zwischen 1 und 99 eingeben.";
+      $("durationDisplay").textContent = ok ? `${Number($("duration").value)} s` : "–";
+      $("requestStart").disabled = !ok || timer !== null;
+      document.querySelectorAll(".preset").forEach(b => b.classList.toggle("selected", ok && Number(b.dataset.duration) === Number($("duration").value)));
+    }
+    function log(message) {
+      events.unshift({message, time:new Date()});
+      events = events.slice(0,20);
+      renderEvents();
+    }
+    function renderEvents() {
+      $("events").innerHTML = "";
+      events.forEach(e => {
+        const div = document.createElement("div");
+        div.className = "event";
+        const msg = document.createElement("div");
+        msg.textContent = e.message;
+        const small = document.createElement("small");
+        small.textContent = e.time.toLocaleString("de-DE");
+        div.append(msg, small);
+        $("events").appendChild(div);
+      });
+    }
+    function cancelSimulation(message) {
+      if (timer !== null) { clearInterval(timer); timer = null; }
+      $("countdownPanel").classList.add("hidden");
+      $("confirmPanel").classList.add("hidden");
+      $("requestStart").classList.remove("hidden");
+      $("requestStart").disabled = !validDuration();
+      if (message) log(message);
+    }
+    $("duration").addEventListener("input", updateDuration);
+    $("minus").addEventListener("click", () => { if (validDuration()) $("duration").value = Math.max(1, Number($("duration").value)-1); updateDuration(); });
+    $("plus").addEventListener("click", () => { if (validDuration()) $("duration").value = Math.min(99, Number($("duration").value)+1); updateDuration(); });
+    document.querySelectorAll(".preset").forEach(b => b.addEventListener("click", () => { $("duration").value = b.dataset.duration; updateDuration(); }));
+    $("requestStart").addEventListener("click", () => {
+      if (!validDuration()) return;
+      startDuration = Number($("duration").value);
+      $("confirmText").textContent = `Simulierter Ablauf: 10 Sekunden Vorlauf, danach ${startDuration} Sekunden Streudauer. Es wird kein echter Befehl gesendet.`;
+      $("confirmPanel").classList.remove("hidden");
+      $("requestStart").classList.add("hidden");
+    });
+    $("cancelStart").addEventListener("click", () => {
+      $("confirmPanel").classList.add("hidden");
+      $("requestStart").classList.remove("hidden");
+    });
+    $("confirmStart").addEventListener("click", () => {
+      $("confirmPanel").classList.add("hidden");
+      $("countdownPanel").classList.remove("hidden");
+      $("requestStart").classList.add("hidden");
+      let remaining = 10;
+      $("countdownTitle").textContent = `Demo: Vorlauf ${remaining} s`;
+      $("countdownText").textContent = "Nur Simulation. Es wird kein Relais geschaltet.";
+      log(`Demo-Start bestätigt · ${startDuration} s Streudauer · 10 s Vorlauf`);
+      timer = setInterval(() => {
+        remaining--;
+        if (remaining > 0) {
+          $("countdownTitle").textContent = `Demo: Vorlauf ${remaining} s`;
+        } else {
+          clearInterval(timer);
+          let runRemaining = startDuration;
+          $("countdownTitle").textContent = `Demo: Streudauer ${runRemaining} s`;
+          $("countdownText").textContent = "Simulierter Lauf – kein Motor wird angesteuert.";
+          timer = setInterval(() => {
+            runRemaining--;
+            $("countdownTitle").textContent = `Demo: Streudauer ${Math.max(0,runRemaining)} s`;
+            if (runRemaining <= 0) {
+              clearInterval(timer); timer = null;
+              $("countdownPanel").classList.add("hidden");
+              $("requestStart").classList.remove("hidden");
+              updateDuration();
+              log("Demo-Fütterung beendet · kein Motor angesteuert");
+            }
+          }, 1000);
+        }
+      }, 1000);
+      $("requestStart").disabled = true;
+    });
+    $("stopDemo").addEventListener("click", () => cancelSimulation("Demo-Ablauf abgebrochen"));
+    $("autoToggle").addEventListener("click", () => {
+      autoEnabled = !autoEnabled;
+      $("autoToggle").textContent = autoEnabled ? "Ein" : "Aus";
+      $("autoToggle").classList.toggle("off", !autoEnabled);
+      log(`Demo: Automatik ${autoEnabled ? "aktiviert" : "deaktiviert"}`);
+    });
+    $("clearEvents").addEventListener("click", () => { events = [{message:"Demo-Protokoll zurückgesetzt",time:new Date()}]; renderEvents(); });
+    document.querySelectorAll("nav button").forEach(btn => btn.addEventListener("click", () => {
+      document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b === btn));
+      ["control","history","settings"].forEach(p => $(`${p}Page`).classList.toggle("hidden", p !== btn.dataset.page));
+      if (btn.dataset.page === "history") renderEvents();
+    }));
+    updateDuration();
+    renderEvents();
+  </script>
+</body>
+</html>
