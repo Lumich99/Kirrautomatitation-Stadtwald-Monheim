@@ -144,5 +144,6 @@ function updateDuration(){const ok=validDuration();$("durationError").textConten
 $("duration").addEventListener("input",updateDuration);$("minus").onclick=()=>{if(validDuration())$("duration").value=Math.max(1,Number($("duration").value)-1);updateDuration()};$("plus").onclick=()=>{if(validDuration())$("duration").value=Math.min(99,Number($("duration").value)+1);updateDuration()};
 $("startBtn").onclick=()=>{if(!selectedDevice()){ $("runNotice").textContent="Bitte zuerst einen Automaten registrieren und auswählen."; $("runNotice").classList.remove("hidden");return}if(!validDuration())return;const n=Number($("duration").value);$("runNotice").textContent=`DEMO: ${selectedDevice().name} würde nach 10 Sekunden Vorlauf ${n} Sekunden laufen. Es wurde kein Befehl gesendet.`;$("runNotice").classList.remove("hidden")};
 currentSession();
+console.log("Supabase geladen:", !!window.supabase, "Client erstellt:", !!supabase);
 </script>
 </body></html>
