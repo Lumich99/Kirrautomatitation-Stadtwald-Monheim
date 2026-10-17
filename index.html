@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#142d27">
+<title>Fütterungssteuerung</title>
+<style>
+:root{--ink:#142d27;--green:#245b43;--pale:#dcebe2;--bg:#f4f7f4;--line:#dce5df;--muted:#66776f;--white:#fff;--red:#a12d25;--amber:#80560e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#1e2e27;font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.shell{max-width:720px;margin:auto;padding:14px 13px 36px}header{background:var(--ink);color:#fff;padding:20px;border-radius:20px}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:#315a4b;font-size:24px}h1{font-size:21px;margin:0;line-height:1.2}.sub{font-size:13px;color:#c8d9d0;margin-top:4px}
+.status{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #49665b;padding-top:13px;margin-top:16px}.pill{font-size:11px;font-weight:800;border-radius:99px;padding:5px 9px;background:#fff2d6;color:var(--amber);white-space:nowrap}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:13px 0}nav button{border:0;border-radius:12px;padding:10px 3px;background:#e8eeea;color:#42564c;font-weight:700;font-size:13px}nav button.active{background:var(--pale);color:var(--green)}
+.card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:16px;margin:12px 0}h2{font-size:18px;margin:0 0 5px}h3{font-size:15px;margin:0}.muted{font-size:13px;color:var(--muted)}.row{display:flex;align-items:center;gap:11px}.grow{flex:1;min-width:0}.divider{height:1px;background:var(--line);margin:14px 0}
+label{display:block;font-size:13px;font-weight:700;margin:12px 0 5px}input,select{width:100%;border:1px solid #ccd8d0;border-radius:11px;padding:12px;font:inherit;background:white;color:#1e2e27}input:focus,select:focus{outline:2px solid #9fc7ae;outline-offset:1px}
+button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.primary,.secondary,.danger{width:100%;padding:13px 14px;border-radius:12px;font:inherit;font-weight:750;margin-top:10px}.primary{border:0;background:var(--green);color:#fff}.secondary{border:1px solid #cbd8cf;background:#fff;color:#274a38}.danger{border:1px solid #e5c9c6;background:#fff;color:var(--red)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f0f5f1;border-radius:13px;padding:13px}.stat strong{display:block;font-size:21px;margin-top:3px}.hidden{display:none!important}.notice{border:1px solid #ead8b3;background:#fff8e9;color:#70521b;padding:12px;border-radius:12px;font-size:13px;margin-top:12px}.good{color:#245b43}.error{color:var(--red);font-size:13px;margin-top:8px}.device{border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:10px}.device.selected{border-color:#78a68a;background:#f3f8f4}.badge{font-size:11px;font-weight:800;background:#edf2ee;border-radius:99px;padding:4px 8px;color:#526359}.smallbtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 10px;color:#294737;font-weight:700}.event{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.event:last-child{border-bottom:0}footer{text-align:center;color:var(--muted);font-size:12px;padding:12px}
+@media(min-width:520px){.shell{padding-top:25px}header{padding:25px}}
+</style>
+</head>
+<body>
+<main class="shell">
+<header><div class="brand"><div class="logo">🌱</div><div><h1>Fütterungssteuerung</h1><div class="sub">Mehrgeräte-Prototyp</div></div></div><div class="status"><div><strong id="headerUser">Nicht angemeldet</strong><div class="sub" id="headerDevice">Kein Automat ausgewählt</div></div><span class="pill">DEMO · OFFLINE</span></div></header>
+
+<section id="auth">
+  <div class="card">
+    <h2 id="authTitle">Benutzer anmelden</h2>
+    <div class="muted">Demo-Benutzerverwaltung auf diesem Gerät. Noch keine echte Cloud-Anmeldung.</div>
+    <label for="username">Benutzername</label><input id="username" autocomplete="username" maxlength="32" placeholder="z. B. max">
+    <label for="pin">Vierstelliger Code</label><input id="pin" inputmode="numeric" autocomplete="current-password" type="password" maxlength="4" pattern="[0-9]{4}" placeholder="••••">
+    <button id="authSubmit" class="primary">Anmelden</button>
+    <button id="switchAuth" class="secondary">Neuen Benutzer registrieren</button>
+    <div id="authError" class="error" role="alert"></div>
+    <div class="notice"><strong>Wichtig:</strong> Dies ist nur ein lokaler Prototyp. Benutzer und Code werden im Browser gespeichert. Ein vierstelliger Code ist für echten Fernzugriff oder kommerziellen Betrieb nicht sicher genug. Bitte keine echten oder wiederverwendeten Zugangsdaten verwenden.</div>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+<nav aria-label="Hauptmenü">
+<button class="active" data-page="control">Steuerung</button><button data-page="devices">Automaten</button><button data-page="history">Protokoll</button><button data-page="account">Konto</button>
+</nav>
+
+<section id="controlPage">
+  <div class="card">
+    <div class="row"><div class="grow"><h2>Manuelle Fütterung</h2><div class="muted" id="controlDeviceName">Kein Automat ausgewählt</div></div><span class="badge">DEMO</span></div>
+    <p class="muted">Der Start hat 10 Sekunden Vorlauf. Danach läuft die simulierte Streuung für die gewählte Dauer.</p>
+    <div class="divider"></div>
+    <div class="row"><div class="grow"><h3>Streudauer</h3><div class="muted">1–99 Sekunden</div></div><strong id="durationLabel" style="font-size:24px">8 s</strong></div>
+    <div class="row" style="margin-top:10px"><button class="smallbtn" id="minus">−</button><input id="duration" type="number" min="1" max="99" value="8" inputmode="numeric" aria-label="Streudauer"><button class="smallbtn" id="plus">+</button></div>
+    <div id="durationError" class="error"></div>
+    <button id="requestStart" class="primary">Manuellen Start anfordern</button>
+    <div id="confirmPanel" class="notice hidden"><strong>Start wirklich vorbereiten?</strong><p id="confirmText"></p><button id="confirmStart" class="primary">Bestätigen (nur Demo)</button><button id="cancelStart" class="secondary">Abbrechen</button></div>
+    <div id="runPanel" class="notice hidden" aria-live="polite"><strong id="runTitle">Demo läuft</strong><p id="runText">Kein Motor wird angesteuert.</p><button id="cancelRun" class="secondary">Simulation abbrechen</button></div>
+    <div class="notice">Es werden keine echten Gerätebefehle gesendet. LTE-Verbindung und Hardware sind noch nicht verbunden.</div>
+  </div>
+  <div class="card"><div class="row"><div class="grow"><h3>Automatik</h3><div class="muted">Demo-Schalter; Zeitplan später</div></div><button id="autoToggle" class="smallbtn">Ein</button></div><div class="divider"></div><div class="muted">Nächste Fütterung: noch kein Zeitplan hinterlegt.</div></div>
+</section>
+
+<section id="devicesPage" class="hidden">
+  <div class="card"><h2>Automaten verwalten</h2><div class="muted">Registriere mehrere Geräte in dieser Browser-Demo und wähle aus, welches angezeigt wird.</div><div id="deviceList"></div></div>
+  <div class="card"><h2>Automaten registrieren</h2>
+    <label for="deviceName">Name des Automaten</label><input id="deviceName" maxlength="50" placeholder="z. B. Teich Nord">
+    <label for="deviceId">Gerätekennung</label><input id="deviceId" maxlength="40" placeholder="z. B. FTR-001">
+    <div class="muted">Die Kennung ist vorerst ein frei gewählter Name/ID. Es wird nicht geprüft, ob ein echtes Gerät existiert.</div>
+    <button id="registerDevice" class="primary">Automat registrieren</button><div id="deviceError" class="error"></div>
+  </div>
+</section>
+
+<section id="historyPage" class="hidden"><div class="card"><h2>Ereignisprotokoll</h2><div class="muted">Lokale Demo-Ereignisse dieses Benutzers.</div><div id="events"></div><button id="clearEvents" class="secondary">Protokoll leeren</button></div></section>
+
+<section id="accountPage" class="hidden">
+  <div class="card"><h2>Benutzerkonto</h2><div class="row" style="margin-top:12px"><div class="grow"><div class="muted">Angemeldet als</div><strong id="accountName">–</strong></div><span class="badge">Lokale Demo</span></div><div class="divider"></div><div class="muted">Die Demo speichert Benutzernamen, einen einfachen PIN-Prüfwert und Automatenliste lokal im Browser. Das ist keine sichere Benutzerverwaltung für den Produktivbetrieb.</div><button id="logout" class="primary">Abmelden</button><button id="deleteAccount" class="danger">Lokales Demo-Konto löschen</button><div id="accountError" class="error"></div></div>
+  <div class="notice">Für den späteren Echtbetrieb: echte Anmeldung über Backend, sichere PIN-/Passwortspeicherung, Rollen und Rechte, Gerätebindung, verschlüsselte API und Audit-Protokoll. Der vierstellige Code sollte dann nur als zusätzlicher PIN/Bestätigung dienen, nicht als alleiniger Schutz.</div>
+</section>
+</div>
+<footer>Fütterungssteuerung · Demo-Prototyp · Keine Hardwareverbindung</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const STORE="fuetterungssteuerung_demo_v2";
+let state=loadState(), currentUser=null, page="control", timer=null, autoEnabled=true, runSeconds=0, runDuration=8, authMode="login";
+function loadState(){try{return JSON.parse(localStorage.getItem(STORE))||{users:{}}}catch(e){return {users:{}}}}
+function saveState(){localStorage.setItem(STORE,JSON.stringify(state))}
+function userData(){return currentUser?state.users[currentUser]:null}
+function clean(s){return s.trim().replace(/\s+/g," ")}
+function setAuthMode(mode){authMode=mode;$("authTitle").textContent=mode==="register"?"Neuen Benutzer registrieren":"Benutzer anmelden";$("authSubmit").textContent=mode==="register"?"Konto erstellen":"Anmelden";$("switchAuth").textContent=mode==="register"?"Zur Anmeldung wechseln":"Neuen Benutzer registrieren";$("authError").textContent="";$("pin").value=""}
+$("switchAuth").onclick=()=>setAuthMode(authMode==="login"?"register":"login");
+$("pin").addEventListener("input",()=>{$("pin").value=$("pin").value.replace(/\D/g,"").slice(0,4)});
+$("authSubmit").onclick=()=>{
+ const name=clean($("username").value),pin=$("pin").value;
+ if(!/^[a-zA-Z0-9_.-]{3,32}$/.test(name)){$("authError").textContent="Benutzername: 3–32 Zeichen (Buchstaben, Zahlen, Punkt, _ oder -).";return}
+ if(!/^\d{4}$/.test(pin)){$("authError").textContent="Bitte genau vier Ziffern eingeben.";return}
+ const key=name.toLowerCase();
+ if(authMode==="register"){
+  if(state.users[key]){$("authError").textContent="Dieser Benutzername existiert bereits.";return}
+  state.users[key]={name,pin,devices:[],events:[{message:"Demo-Benutzer erstellt",time:new Date().toISOString()}]};
+  saveState();currentUser=key;log("Benutzerkonto erstellt · Demo");showApp();return;
+ }
+ if(!state.users[key]||state.users[key].pin!==pin){$("authError").textContent="Benutzername oder Code stimmt nicht.";return}
+ currentUser=key;showApp();
+};
+function showApp(){$("auth").classList.add("hidden");$("app").classList.remove("hidden");$("headerUser").textContent=userData().name;$("accountName").textContent=userData().name;renderDevices();renderEvents();goPage("control")}
+function logout(){currentUser=null;$("app").classList.add("hidden");$("auth").classList.remove("hidden");$("username").value="";$("pin").value="";setAuthMode("login");$("headerUser").textContent="Nicht angemeldet";$("headerDevice").textContent="Kein Automat ausgewählt"}
+$("logout").onclick=logout;
+$("deleteAccount").onclick=()=>{if(confirm("Lokales Demo-Konto und dessen Geräte aus diesem Browser löschen?")){delete state.users[currentUser];saveState();currentUser=null;logout();$("accountError").textContent="Lokales Demo-Konto gelöscht."}};
+function log(message){const u=userData();if(!u)return;u.events.unshift({message,time:new Date().toISOString()});u.events=u.events.slice(0,50);saveState();renderEvents()}
+function renderEvents(){const box=$("events");if(!box||!userData())return;box.innerHTML="";const events=userData().events||[];if(!events.length){box.textContent="Noch keine Ereignisse.";return}events.forEach(e=>{const div=document.createElement("div");div.className="event";const msg=document.createElement("div");msg.textContent=e.message;const small=document.createElement("div");small.className="muted";small.textContent=new Date(e.time).toLocaleString("de-DE");div.append(msg,small);box.append(div)})}
+function selectedDevice(){const u=userData();return u&&u.devices.find(d=>d.id===u.selectedDevice)}
+function renderDevices(){const u=userData();if(!u)return;const box=$("deviceList");box.innerHTML="";if(!u.devices.length){const p=document.createElement("p");p.className="muted";p.textContent="Noch keine Automaten registriert.";box.append(p)}u.devices.forEach(d=>{const card=document.createElement("div");card.className="device"+(u.selectedDevice===d.id?" selected":"");const row=document.createElement("div");row.className="row";const content=document.createElement("div");content.className="grow";const title=document.createElement("h3");title.textContent=d.name;const meta=document.createElement("div");meta.className="muted";meta.textContent="ID: "+d.id+" · Nicht verbunden";content.append(title,meta);const select=document.createElement("button");select.className="smallbtn";select.textContent=u.selectedDevice===d.id?"Ausgewählt":"Auswählen";select.onclick=()=>{u.selectedDevice=d.id;saveState();renderDevices();updateSelected();log("Automat ausgewählt: "+d.name)};row.append(content,select);card.append(row);const del=document.createElement("button");del.className="secondary";del.textContent="Aus Liste entfernen";del.onclick=()=>{if(confirm("Demo-Automat „"+d.name+"“ entfernen?")){u.devices=u.devices.filter(x=>x.id!==d.id);if(u.selectedDevice===d.id)u.selectedDevice=u.devices[0]?.id||null;saveState();renderDevices();updateSelected();log("Automat entfernt: "+d.name)}};card.append(del);box.append(card)});updateSelected()}
+function updateSelected(){const d=selectedDevice();$("headerDevice").textContent=d?d.name+" · nicht verbunden":"Kein Automat ausgewählt";$("controlDeviceName").textContent=d?d.name+" · ID "+d.id:"Bitte zuerst unter „Automaten“ ein Gerät registrieren."; $("requestStart").disabled=!validDuration()||!d||timer!==null}
+$("registerDevice").onclick=()=>{const name=clean($("deviceName").value),id=clean($("deviceId").value).toUpperCase();$("deviceError").textContent="";if(!name){$("deviceError").textContent="Bitte einen Namen eingeben.";return}if(!/^[A-Z0-9_-]{3,40}$/.test(id)){$("deviceError").textContent="Die Gerätekennung muss 3–40 Zeichen haben (A–Z, Zahlen, - oder _).";return}const u=userData();if(u.devices.some(d=>d.id===id)){$("deviceError").textContent="Diese Gerätekennung ist bei diesem Benutzer bereits registriert.";return}u.devices.push({name,id,registeredAt:new Date().toISOString()});if(!u.selectedDevice)u.selectedDevice=id;saveState();$("deviceName").value="";$("deviceId").value="";renderDevices();log("Demo-Automat registriert: "+name+" ("+id+")")};
+function goPage(p){page=p;["control","devices","history","account"].forEach(x=>$(x+"Page").classList.toggle("hidden",x!==p));document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===p));if(p==="history")renderEvents();if(p==="devices")renderDevices()}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>goPage(b.dataset.page));
+function validDuration(){const s=$("duration").value,n=Number(s);return s.trim()!==""&&Number.isInteger(n)&&n>=1&&n<=99}
+function updateDuration(){const ok=validDuration();$("durationError").textContent=ok?"":"Bitte eine ganze Zahl zwischen 1 und 99 eingeben."; $("durationLabel").textContent=ok?Number($("duration").value)+" s":"–";if(currentUser)updateSelected();else $("requestStart").disabled=!ok}
+$("duration").oninput=updateDuration;$("minus").onclick=()=>{if(validDuration())$("duration").value=Math.max(1,Number($("duration").value)-1);updateDuration()};$("plus").onclick=()=>{if(validDuration())$("duration").value=Math.min(99,Number($("duration").value)+1);updateDuration()};
+$("requestStart").onclick=()=>{if(!validDuration()||!selectedDevice())return;runDuration=Number($("duration").value);$("confirmText").textContent=`${selectedDevice().name}: 10 Sekunden Vorlauf, anschließend ${runDuration} Sekunden simulierte Streuung. Kein echter Befehl wird gesendet.`;$("confirmPanel").classList.remove("hidden");$("requestStart").classList.add("hidden")};
+$("cancelStart").onclick=()=>{$("confirmPanel").classList.add("hidden");$("requestStart").classList.remove("hidden");updateSelected()};
+function endRun(msg){if(timer!==null)clearInterval(timer);timer=null;$("runPanel").classList.add("hidden");$("confirmPanel").classList.add("hidden");$("requestStart").classList.remove("hidden");updateSelected();if(msg)log(msg)}
+$("confirmStart").onclick=()=>{if(!selectedDevice())return;$("confirmPanel").classList.add("hidden");$("runPanel").classList.remove("hidden");runSeconds=10;$("runTitle").textContent="Demo: Vorlauf 10 s";$("runText").textContent="Nur Simulation. Es wird kein Relais geschaltet.";log("Demo-Start bestätigt: "+selectedDevice().name+" · "+runDuration+" s · 10 s Vorlauf");$("requestStart").disabled=true;timer=setInterval(()=>{runSeconds--;if(runSeconds>0){$("runTitle").textContent="Demo: Vorlauf "+runSeconds+" s"}else{clearInterval(timer);runSeconds=runDuration;$("runTitle").textContent="Demo: Streudauer "+runSeconds+" s";timer=setInterval(()=>{runSeconds--;$("runTitle").textContent="Demo: Streudauer "+Math.max(0,runSeconds)+" s";if(runSeconds<=0)endRun("Demo-Fütterung beendet · kein Motor angesteuert")},1000)}},1000)};
+$("cancelRun").onclick=()=>endRun("Demo-Ablauf abgebrochen");
+$("autoToggle").onclick=()=>{autoEnabled=!autoEnabled;$("autoToggle").textContent=autoEnabled?"Ein":"Aus";log("Demo: Automatik "+(autoEnabled?"aktiviert":"deaktiviert"))};
+$("clearEvents").onclick=()=>{userData().events=[];saveState();renderEvents()};
+setAuthMode("login");
+</script>
+</body></html>
