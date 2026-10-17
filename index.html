@@ -78,8 +78,8 @@ button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.primary,.s
   5) Deaktiviere öffentliche Sign-ups in den Auth-Einstellungen.
   Niemals den service_role key in diese Datei einfügen.
 */
-const SUPABASE_URL = "HIER_SUPABASE_PROJECT_URL_EINTRAGEN";
-const SUPABASE_ANON_KEY = "HIER_SUPABASE_ANON_PUBLIC_KEY_EINTRAGEN";
+const SUPABASE_URL = "https://sbkubavasbazvmhfkdll.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNia3ViYXZhc2JhenZtaGZrZGxsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIyNjk5MzAsImV4cCI6MjEwNzg0NTkzMH0.KHENw_rWkWby6Lqp8DACtn1vj8SppsdoYQjhcA9V-nM";
 const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("HIER_") && !SUPABASE_ANON_KEY.includes("HIER_");
 const supabase = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
 const $ = id => document.getElementById(id);
